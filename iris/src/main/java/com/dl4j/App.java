@@ -14,7 +14,10 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Adam;
@@ -58,5 +61,21 @@ public class App {
         for (int i = 0; i < nEpochs; i++) {
             model.fit(dataSetIteratorTrain);
         }
+
+        File fileTest = new ClassPathResource("irisTest.csv").getFile();
+        RecordReader recordReaderTest = new CSVRecordReader();
+        recordReaderTest.initialize(new FileSplit(fileTest));
+        DataSetIterator dataSetIteratorTest = new RecordReaderDataSetIterator(recordReaderTest, batchSize, classIndex,
+                outputSize);
+        Evaluation evaluation = new Evaluation(outputSize);
+
+        while (dataSetIteratorTest.hasNext()) {
+            DataSet dataSet = dataSetIteratorTest.next();
+            INDArray features = dataSet.getFeatures();
+            INDArray labels = dataSet.getLabels();
+            INDArray predicted = model.output(features);
+            evaluation.eval(labels, predicted);
+        }
+        System.out.println(evaluation.stats());
     }
 }
