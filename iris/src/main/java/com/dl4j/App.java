@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -79,6 +80,7 @@ public class App {
             evaluation.eval(testLabels, predictedLabels);
         }
         System.out.println(evaluation.stats());
+        ModelSerializer.writeModel(model, new File("model.zip"), true);
         INDArray input = Nd4j.create(new double[][] { { 5.1, 3.5, 1.4, 0.2 }, { 4.9, 3.0, 1.4, 0.2 },
                 { 6.7, 3.1, 4.4, 1.4 }, { 5.6, 3.0, 4.5, 1.5 }, { 6.0, 3.0, 4.8, 1.8 }, { 6.9, 3.1, 5.4, 2.1 } });
         System.out.println("**************");
