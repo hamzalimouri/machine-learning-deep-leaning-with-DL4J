@@ -7,6 +7,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -34,5 +36,8 @@ public class App {
         MultiLayerNetwork model = new MultiLayerNetwork(configuration);
         model.init();
         // System.out.println(configuration.toJson());
+        UIServer uiServer = UIServer.getInstance();
+        InMemoryStatsStorage inMemoryStatsStorage = new InMemoryStatsStorage();
+        uiServer.attach(inMemoryStatsStorage);
     }
 }
