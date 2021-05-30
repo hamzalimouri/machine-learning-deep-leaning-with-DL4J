@@ -21,7 +21,10 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
@@ -66,8 +69,8 @@ public class App {
 
         File trainDataFile = new File(basePath + "/training");
         FileSplit trainFileSplit = new FileSplit(trainDataFile, NativeImageLoader.ALLOWED_FORMATS, new Random(seed));
-        ParentPathLabelGenerator labelMarker = new ParentPathLabelGenerator();
-        ImageRecordReader trainImageRecordReader = new ImageRecordReader(height, width, depth, labelMarker);
+        ImageRecordReader trainImageRecordReader = new ImageRecordReader(height, width, depth,
+                new ParentPathLabelGenerator());
         trainImageRecordReader.initialize(trainFileSplit);
         int labelIndex = 1;
         int batchSize = 54;
@@ -80,5 +83,24 @@ public class App {
         for (int i = 0; i < epochCount; i++) {
             model.fit(trainDataSetIterator);
         }
+        File testDataFile = new File(basePath + "/testing");
+        FileSplit testFileSplit = new FileSplit(testDataFile, NativeImageLoader.ALLOWED_FORMATS, new Random(seed));
+        ImageRecordReader testImageRecordReader = new ImageRecordReader(height, width, depth,
+                new ParentPathLabelGenerator());
+        testImageRecordReader.initialize(testFileSplit);
+        DataSetIterator testDataSetIterator = new RecordReaderDataSetIterator(testImageRecordReader, batchSize,
+                labelIndex, outputSize);
+        DataNormalization scalerTest = new ImagePreProcessingScaler(0, 1);
+        scalerTest.fit(testDataSetIterator);
+        testDataSetIterator.setPreProcessor(scalerTest);
+        Evaluation evaluation = new Evaluation();
+        while (testDataSetIterator.hasNext()) {
+            DataSet dataSet = testDataSetIterator.next();
+            INDArray features = dataSet.getFeatures();
+            INDArray targetLabels = dataSet.getLabels();
+            INDArray predicted = model.output(features);
+            evaluation.eval(predicted, targetLabels);
+        }
+        System.out.println(evaluation.stats());
     }
 }
