@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
+import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -102,5 +103,6 @@ public class App {
             evaluation.eval(predicted, targetLabels);
         }
         System.out.println(evaluation.stats());
+        ModelSerializer.writeModel(model, new File("model.zip"), true);
     }
 }
