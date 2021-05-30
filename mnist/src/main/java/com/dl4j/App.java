@@ -1,6 +1,15 @@
 package com.dl4j;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Random;
+
+import org.datavec.api.io.labels.ParentPathLabelGenerator;
+import org.datavec.api.split.FileSplit;
+import org.datavec.image.loader.NativeImageLoader;
+import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -13,17 +22,22 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class App {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         long seed = 1234;
         double learningRate = 0.001;
         long height = 28;
         long width = 28;
         long depth = 1;
         int outputSize = 10;
+        String basePath = System.getProperty("user.home") + "/Desktop/mnist_png";
+
         MultiLayerConfiguration configuration = new NeuralNetConfiguration.Builder().seed(seed)
                 .updater(new Adam(learningRate)).list().setInputType(InputType.convolutional(height, width, depth))
                 .layer(0,
@@ -49,5 +63,22 @@ public class App {
         StatsStorage statsStorage = new InMemoryStatsStorage();
         uiServer.attach(statsStorage);
         model.setListeners(new StatsListener(statsStorage));
+
+        File trainDataFile = new File(basePath + "/training");
+        FileSplit trainFileSplit = new FileSplit(trainDataFile, NativeImageLoader.ALLOWED_FORMATS, new Random(seed));
+        ParentPathLabelGenerator labelMarker = new ParentPathLabelGenerator();
+        ImageRecordReader trainImageRecordReader = new ImageRecordReader(height, width, depth, labelMarker);
+        trainImageRecordReader.initialize(trainFileSplit);
+        int labelIndex = 1;
+        int batchSize = 54;
+        DataSetIterator trainDataSetIterator = new RecordReaderDataSetIterator(trainImageRecordReader, batchSize,
+                labelIndex, outputSize);
+        DataNormalization scaler = new ImagePreProcessingScaler(0, 1);
+        scaler.fit(trainDataSetIterator);
+        trainDataSetIterator.setPreProcessor(scaler);
+        int epochCount = 1;
+        for (int i = 0; i < epochCount; i++) {
+            model.fit(trainDataSetIterator);
+        }
     }
 }
